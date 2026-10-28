@@ -1,0 +1,3 @@
+#!/bin/sh
+# Preserve the bundled tools when Eleven requests a login shell.
+exec /bin/bash --noprofile --norc "$@"

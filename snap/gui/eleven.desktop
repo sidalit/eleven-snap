@@ -1,0 +1,9 @@
+[Desktop Entry]
+Type=Application
+Name=Eleven
+Comment=Analyze binaries and Android apps with AI agents
+Exec=eleven %F
+Icon=${SNAP}/meta/gui/eleven.png
+Terminal=false
+Categories=Development;
+StartupWMClass=eleven_eleven

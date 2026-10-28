@@ -1,0 +1,248 @@
+name: eleven
+base: core26
+version: '0.1.13'
+title: Eleven
+icon: snap/gui/eleven.png
+summary: Agent-assisted reverse engineering for binaries and Android apps
+description: |
+  Eleven is a native desktop workbench for reverse engineering. Inspect
+  binaries, decompile Android apps, compare functions, annotate code and
+  export patched copies. Connect an ACP agent to help explain and rename
+  code through Eleven's analysis tools.
+
+  Includes Ghidra, Rizin, REA, jadx and apktool. Agent configuration and
+  downloads stay inside the snap. Host process debugging, host-installed
+  analysis tools and macOS-specific GPU profiling are not supported.
+license: Apache-2.0
+grade: stable
+confinement: strict
+website: https://eleven.chizi.app
+source-code:
+  - https://github.com/Zfinix/eleven
+  - https://github.com/sidalit/eleven-snap
+issues:
+  - https://github.com/Zfinix/eleven/issues
+  - https://github.com/sidalit/eleven-snap/issues
+contact: https://github.com/sidalit/eleven-snap/issues
+
+platforms:
+  amd64:
+
+apps:
+  eleven:
+    command: bin/eleven
+    extensions: [gnome]
+    plugs:
+      - audio-playback
+      - home
+      - network
+      - network-bind
+      - removable-media
+
+layout:
+  /etc/java-25-openjdk:
+    bind: $SNAP/etc/java-25-openjdk
+
+parts:
+  eleven:
+    plugin: nil
+    source: https://github.com/Zfinix/eleven.git
+    source-tag: v$SNAPCRAFT_PROJECT_VERSION
+    source-depth: 1
+    source-subdir: app
+    after: [bun, gpuix, node]
+    build-environment:
+      - PATH: $CRAFT_STAGE/build-deps/bin:$CRAFT_STAGE/opt/eleven/Resources/node/bin:$PATH
+      - HUSKY: '0'
+    build-packages: [patch]
+    override-pull: |
+      craftctl default
+      patch -d "$CRAFT_PART_SRC" -p1 < "$CRAFT_PROJECT_DIR/snap/patches/desktop-id.patch"
+    override-build: |
+      cd "$CRAFT_PART_BUILD/app"
+      bun install --frozen-lockfile
+      cp -a "$CRAFT_STAGE/build-deps/gpuix/native/." node_modules/@gpuix/native/
+      cp -a "$CRAFT_STAGE/build-deps/gpuix/react/." node_modules/@gpuix/react/
+      mkdir -p "$CRAFT_PART_INSTALL/opt/eleven/bin" "$CRAFT_PART_INSTALL/opt/eleven/Resources"
+      bun build --compile --target=bun-linux-x64-baseline \
+        --define process.env.NODE_ENV='"production"' src/bundled.ts \
+        --outfile "$CRAFT_PART_INSTALL/opt/eleven/bin/eleven"
+      cp -a assets skills locales vendor "$CRAFT_PART_INSTALL/opt/eleven/Resources/"
+      cp -a assets/fonts "$CRAFT_PART_INSTALL/opt/eleven/Resources/fonts"
+      install -Dm644 "$CRAFT_PART_BUILD/LICENSE" \
+        "$CRAFT_PART_INSTALL/usr/share/doc/eleven/LICENSE"
+      install -Dm644 "$CRAFT_PART_BUILD/THIRD_PARTY_NOTICES.md" \
+        "$CRAFT_PART_INSTALL/usr/share/doc/eleven/THIRD_PARTY_NOTICES.md"
+      mkdir -p "$CRAFT_PART_INSTALL/usr/share/doc/eleven/npm-licenses"
+      find -L node_modules -type f \( -iname 'license*' -o -iname 'notice*' \) \
+        -exec cp --parents -t "$CRAFT_PART_INSTALL/usr/share/doc/eleven/npm-licenses" {} +
+
+  gpuix:
+    plugin: rust
+    source: https://github.com/Zfinix/gpuix.git
+    source-commit: 26359c1d64e990d2aea15e0f55fb9bfe864910cd
+    source-submodules: [zed]
+    rust-channel: '1.97.1'
+    after: [bun, node]
+    build-environment:
+      - PATH: $CRAFT_STAGE/build-deps/bin:$CRAFT_STAGE/opt/eleven/Resources/node/bin:$PATH
+      - CARGO_BUILD_JOBS: $CRAFT_PARALLEL_BUILD_COUNT
+      - CARGO_PROFILE_RELEASE_LTO: thin
+      - CARGO_PROFILE_RELEASE_CODEGEN_UNITS: '16'
+      - HUSKY: '0'
+    build-packages:
+      - build-essential
+      - clang
+      - cmake
+      - pkg-config
+      - libfontconfig-dev
+      - libwayland-dev
+      - libxkbcommon-x11-dev
+      - libx11-xcb-dev
+      - libssl-dev
+      - libzstd-dev
+      - libvulkan-dev
+    override-build: |
+      bun install --frozen-lockfile
+      (cd packages/native && bun run build:release)
+      (cd packages/react && bun run build)
+      for package in native react; do
+        dest="$CRAFT_PART_INSTALL/build-deps/gpuix/$package"
+        mkdir -p "$dest"
+        for item in index.js index.cjs index.d.ts browser.mjs dist wasm \
+            jsx-runtime.js jsx-runtime.d.ts jsx-dev-runtime.js jsx-dev-runtime.d.ts LICENSE package.json; do
+          if [ -e "packages/$package/$item" ]; then
+            cp -a "packages/$package/$item" "$dest/"
+          fi
+        done
+      done
+      install -Dm755 packages/native/gpuix-native.linux-x64-gnu.node \
+        "$CRAFT_PART_INSTALL/opt/eleven/Resources/gpuix-native.node"
+      install -Dm644 packages/native/LICENSE "$CRAFT_PART_INSTALL/usr/share/doc/eleven/gpuix/LICENSE"
+    prime:
+      - -build-deps
+
+  rea:
+    plugin: nil
+    source: https://github.com/Zfinix/rea.git
+    source-commit: ffe0bcafbd5f4f1c63da6dc871aa98dfe50f7be0
+    after: [node]
+    build-environment:
+      - PATH: $CRAFT_STAGE/opt/eleven/Resources/node/bin:$PATH
+      - HUSKY: '0'
+    build-packages: [build-essential, python3]
+    override-build: |
+      npm ci --no-audit --no-fund
+      npm run build:cached
+      npm prune --omit=dev --ignore-scripts --no-audit --no-fund
+      mkdir -p "$CRAFT_PART_INSTALL/opt/eleven/Resources/rea"
+      npm pack --ignore-scripts --pack-destination "$CRAFT_PART_BUILD" > package-name.txt
+      tar -xzf "$(cat package-name.txt)" --strip-components=1 \
+        -C "$CRAFT_PART_INSTALL/opt/eleven/Resources/rea"
+      cp -a node_modules "$CRAFT_PART_INSTALL/opt/eleven/Resources/rea/"
+
+  rizin:
+    plugin: meson
+    source: https://github.com/rizinorg/rizin/releases/download/v0.9.1/rizin-src-v0.9.1.tar.xz
+    source-checksum: sha256/7ac1cd7daca7afdda742e15478b1f747fc1f813e496fee71839d1e109e543dca
+    meson-parameters:
+      - --prefix=/opt/eleven/Resources/rizin
+      - --buildtype=release
+      - -Dportable=true
+      - -Dlocal=enabled
+      - -Dstatic_runtime=true
+      - -Ddefault_library=static
+      - -Denable_tests=false
+      - -Denable_rz_test=false
+    build-packages: [build-essential, pkg-config]
+    override-build: |
+      craftctl default
+      mkdir -p "$CRAFT_PART_INSTALL/usr/share/doc/eleven/rizin"
+      cp -a COPYING COPYING.LESSER LICENSES "$CRAFT_PART_INSTALL/usr/share/doc/eleven/rizin/"
+    prime:
+      - opt/eleven/Resources/rizin/bin/rizin
+      - opt/eleven/Resources/rizin/share
+      - usr/share/doc/eleven/rizin
+
+  ghidra:
+    plugin: dump
+    source: https://github.com/NationalSecurityAgency/ghidra/releases/download/Ghidra_12.2_build/ghidra_12.2_PUBLIC_20261016.zip
+    source-checksum: sha256/2c2cd776db3c1f6a097ba418922378ac3649cadd5e844a6f5f088ae628a7be67
+    organize:
+      '*': opt/eleven/Resources/ghidra/
+
+  jadx:
+    plugin: dump
+    source: https://github.com/skylot/jadx/releases/download/v1.5.6/jadx-1.5.6.zip
+    source-checksum: sha256/545ea2be9c242511bc145755cf4bda2485ade42966e096f8b4d3da2a230e8974
+    organize:
+      '*': opt/eleven/Resources/jadx/
+
+  apktool:
+    plugin: dump
+    source: https://github.com/iBotPeaches/Apktool/releases/download/v3.0.3/apktool_3.0.3.jar
+    source-type: file
+    source-checksum: sha256/dbf930b076c6b9be08d57c449cacefc3bdd6b71ebd59b3066fc0e1f5b14f9423
+    organize:
+      apktool_3.0.3.jar: opt/eleven/Resources/apktool.jar
+
+  node:
+    plugin: nil
+    stage-snaps: [node@24/stable]
+    build-packages: [curl, patchelf]
+    override-build: |
+      # Use core26's libraries instead of the classic snap's absolute search paths.
+      patchelf --remove-rpath "$CRAFT_PART_INSTALL/bin/node"
+      # The staged snap's root LICENSE belongs to Yarn; retain Node's own notices.
+      node_version=$("$CRAFT_PART_INSTALL/bin/node" --version)
+      curl --fail --location "https://raw.githubusercontent.com/nodejs/node/$node_version/LICENSE" \
+        --output "$CRAFT_PART_INSTALL/LICENSE"
+    organize:
+      '*': opt/eleven/Resources/node/
+    stage:
+      - opt/eleven/Resources/node/bin/node
+      - opt/eleven/Resources/node/bin/npm
+      - opt/eleven/Resources/node/bin/npx
+      - opt/eleven/Resources/node/bin/corepack
+      - opt/eleven/Resources/node/lib/node_modules
+      - opt/eleven/Resources/node/LICENSE
+
+  bun:
+    plugin: dump
+    source: https://github.com/oven-sh/bun/releases/download/bun-v1.4.3/bun-linux-x64-baseline.zip
+    source-checksum: sha256/1fc2edac843102909e3a1be1d8d9802cc6071cf074e67e88231f4ffe0f8b397b
+    organize:
+      bun: build-deps/bin/bun
+    prime:
+      - -build-deps
+
+  uv:
+    plugin: dump
+    source: https://github.com/astral-sh/uv/releases/download/0.13.6/uv-x86_64-unknown-linux-gnu.tar.gz
+    source-checksum: sha256/f29c3e94ffabd7e6f3ba521dba169a9b7ec12100bf3257087f0f24f6123f3645
+    organize:
+      uv: bin/uv
+      uvx: bin/uvx
+
+  runtime:
+    plugin: nil
+    build-packages: [openjdk-25-jdk-headless]
+    stage-packages:
+      - openjdk-25-jdk-headless
+      - binutils
+      - file
+      - unzip
+      - zenity
+      - wl-clipboard
+      - xclip
+      - libnotify-bin
+      - libcanberra-gtk3-module
+      - libcanberra-gtk3-0
+      - libxkbcommon-x11-0
+    override-build: |
+      cp --remove-destination /etc/ssl/certs/java/cacerts \
+        "$CRAFT_PART_INSTALL/usr/lib/jvm/java-25-openjdk-amd64/lib/security/cacerts"
+
+  integration:
+    plugin: dump
+    source: snap/local

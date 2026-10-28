@@ -1,0 +1,2 @@
+#!/bin/sh
+exec "$JAVA_HOME/bin/java" -jar "$SNAP/opt/eleven/Resources/apktool.jar" "$@"
