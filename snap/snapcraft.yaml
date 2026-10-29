@@ -158,7 +158,8 @@ parts:
     override-build: |
       craftctl default
       mkdir -p "$CRAFT_PART_INSTALL/usr/share/doc/eleven/rizin"
-      cp -a COPYING COPYING.LESSER LICENSES "$CRAFT_PART_INSTALL/usr/share/doc/eleven/rizin/"
+      cp -a "$CRAFT_PART_SRC/COPYING" "$CRAFT_PART_SRC/COPYING.LESSER" \
+        "$CRAFT_PART_SRC/LICENSES" "$CRAFT_PART_INSTALL/usr/share/doc/eleven/rizin/"
     prime:
       - opt/eleven/Resources/rizin/bin/rizin
       - opt/eleven/Resources/rizin/share
@@ -169,7 +170,7 @@ parts:
     source: https://github.com/NationalSecurityAgency/ghidra/releases/download/Ghidra_12.2_build/ghidra_12.2_PUBLIC_20261016.zip
     source-checksum: sha256/2c2cd776db3c1f6a097ba418922378ac3649cadd5e844a6f5f088ae628a7be67
     organize:
-      '*': opt/eleven/Resources/ghidra/
+      ghidra_12.2_PUBLIC: opt/eleven/Resources/ghidra
 
   jadx:
     plugin: dump
@@ -212,7 +213,7 @@ parts:
     source: https://github.com/oven-sh/bun/releases/download/bun-v1.4.3/bun-linux-x64-baseline.zip
     source-checksum: sha256/1fc2edac843102909e3a1be1d8d9802cc6071cf074e67e88231f4ffe0f8b397b
     organize:
-      bun: build-deps/bin/bun
+      bun-linux-x64-baseline/bun: build-deps/bin/bun
     prime:
       - -build-deps
 
