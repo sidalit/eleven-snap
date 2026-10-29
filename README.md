@@ -29,7 +29,7 @@ sudo snap install eleven
 eleven
 ```
 
-Launch from the terminal or your application menu. Ghidra, Rizin, REA, Java, jadx and apktool are included.
+Launch from the terminal or your application menu. Rizin, REA, Java, jadx and apktool are included. Install Ghidra from the app when needed.
 
 ## Configure
 

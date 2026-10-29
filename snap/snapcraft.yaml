@@ -10,9 +10,10 @@ description: |
   export patched copies. Connect an ACP agent to help explain and rename
   code through Eleven's analysis tools.
 
-  Includes Ghidra, Rizin, REA, jadx and apktool. Agent configuration and
-  downloads stay inside the snap. Host process debugging, host-installed
-  analysis tools and macOS-specific GPU profiling are not supported.
+  Includes Rizin, REA, Java, jadx and apktool. Install Ghidra from the app
+  when needed. Downloads and settings stay inside the snap. Host process
+  debugging, host-installed analysis tools and macOS-specific GPU profiling
+  are not supported.
 license: Apache-2.0
 grade: stable
 confinement: strict
@@ -164,13 +165,6 @@ parts:
       - opt/eleven/Resources/rizin/bin/rizin
       - opt/eleven/Resources/rizin/share
       - usr/share/doc/eleven/rizin
-
-  ghidra:
-    plugin: dump
-    source: https://github.com/NationalSecurityAgency/ghidra/releases/download/Ghidra_12.2_build/ghidra_12.2_PUBLIC_20261016.zip
-    source-checksum: sha256/2c2cd776db3c1f6a097ba418922378ac3649cadd5e844a6f5f088ae628a7be67
-    organize:
-      ghidra_12.2_PUBLIC: opt/eleven/Resources/ghidra
 
   jadx:
     plugin: dump
