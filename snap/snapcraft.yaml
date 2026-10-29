@@ -141,6 +141,9 @@ parts:
       tar -xzf "$(cat package-name.txt)" --strip-components=1 \
         -C "$CRAFT_PART_INSTALL/opt/eleven/Resources/rea"
       cp -a node_modules "$CRAFT_PART_INSTALL/opt/eleven/Resources/rea/"
+    prime:
+      - -opt/eleven/Resources/rea/node_modules/**/*.map
+      - -opt/eleven/Resources/rea/node_modules/**/*.d.ts
 
   rizin:
     plugin: meson
