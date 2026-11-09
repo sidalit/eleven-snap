@@ -6,4 +6,4 @@ Exec=eleven %F
 Icon=${SNAP}/meta/gui/eleven.png
 Terminal=false
 Categories=Development;
-StartupWMClass=eleven_eleven
+StartupWMClass=eleven

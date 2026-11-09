@@ -55,10 +55,6 @@ parts:
     build-environment:
       - PATH: $CRAFT_STAGE/build-deps/bin:$CRAFT_STAGE/opt/eleven/Resources/node/bin:$PATH
       - HUSKY: '0'
-    build-packages: [patch]
-    override-pull: |
-      craftctl default
-      patch -d "$CRAFT_PART_SRC" -p1 < "$CRAFT_PROJECT_DIR/snap/patches/desktop-id.patch"
     override-build: |
       cd "$CRAFT_PART_BUILD/app"
       bun install --frozen-lockfile
