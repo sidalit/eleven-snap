@@ -127,7 +127,9 @@ parts:
     build-environment:
       - PATH: $CRAFT_STAGE/opt/eleven/Resources/node/bin:$PATH
       - HUSKY: '0'
-    build-packages: [build-essential, python3]
+    build-packages:
+      - build-essential
+      - python3
     override-build: |
       npm ci --no-audit --no-fund
       npm run build:cached
@@ -154,7 +156,9 @@ parts:
       - -Ddefault_library=static
       - -Denable_tests=false
       - -Denable_rz_test=false
-    build-packages: [build-essential, pkg-config]
+    build-packages:
+      - build-essential
+      - pkg-config
     override-build: |
       craftctl default
       mkdir -p "$CRAFT_PART_INSTALL/usr/share/doc/eleven/rizin"
@@ -182,8 +186,11 @@ parts:
 
   node:
     plugin: nil
-    stage-snaps: [node@24/stable]
-    build-packages: [curl, patchelf]
+    stage-snaps:
+      - node@24/stable
+    build-packages:
+      - curl
+      - patchelf
     override-build: |
       # Use core26's libraries instead of the classic snap's absolute search paths.
       patchelf --remove-rpath "$CRAFT_PART_INSTALL/bin/node"
@@ -220,7 +227,8 @@ parts:
 
   runtime:
     plugin: nil
-    build-packages: [openjdk-25-jdk-headless]
+    build-packages:
+      - openjdk-25-jdk-headless
     stage-packages:
       - openjdk-25-jdk-headless
       - binutils
