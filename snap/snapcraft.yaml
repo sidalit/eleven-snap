@@ -79,7 +79,7 @@ parts:
     source: https://github.com/Zfinix/gpuix.git
     source-commit: 26359c1d64e990d2aea15e0f55fb9bfe864910cd
     source-submodules: [zed]
-    rust-channel: '1.97.1'
+    rust-channel: stable
     after: [bun, node]
     build-environment:
       - PATH: $CRAFT_STAGE/build-deps/bin:$CRAFT_STAGE/opt/eleven/Resources/node/bin:$PATH
