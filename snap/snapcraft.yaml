@@ -1,6 +1,6 @@
 name: eleven
 base: core26
-version: '0.1.15'
+version: '0.1.16'
 title: Eleven
 icon: snap/gui/eleven.png
 summary: Agent-assisted reverse engineering for binaries and Android apps
